@@ -180,5 +180,5 @@ print(f"GenoLaudo - Total de variantes processadas: {total}")
 print(f"GenoLaudo - Número de variantes que passaram na verificação: {passed} ({(passed / total) * 100:.2f}%)")
 print(f"GenoLaudo - Número de variantes reprovadas na verificação {filtered} ({(filtered / total) * 100:.2f}%)")
 
-writer.close();
+writer.close()
 vcf_file.close()
