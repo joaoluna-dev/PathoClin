@@ -7,10 +7,12 @@
 from cyvcf2 import VCF, Writer
 import sys
 
+print("==============================================================================")
 print("GenoLaudo - Iniciando filtragem de vcf...")
 print("Referências para os valores definidos para a filtragem: \n"
       "Van der Auwera et al. (2013) - GATK Best Practices. DOI: doi.org/10.1002/0471250953.bi1110s43 \n"
       "Roy et al. (2018) - AMP/CAP Guidelines. DOI: doi.org/10.1016/j.jmoldx.2017.11.003")
+print("==============================================================================")
 # arquivos de entrada e saída
 # input_file = snakemake.input.vcf
 input_file = sys.argv[1]
