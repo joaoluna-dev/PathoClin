@@ -73,7 +73,10 @@ for variant in vcf_file:
         continue
 
     # DP
-    format_dp = variant.format('DP')
+    try:
+        format_dp = variant.format('DP')
+    except KeyError:
+        format_dp = None
 
     if format_dp is not None:
         # se temos dados de DP da amostra, cada uma quem tem DP baixo é individualmente mascarada
@@ -177,10 +180,12 @@ for variant in vcf_file:
         writer.write_record(variant)
         passed += 1
 
+print("=========================================================================================================")
 print("GenoLaudo - Filtragem finalizada com sucesso!")
 print(f"GenoLaudo - Total de variantes processadas: {total}")
 print(f"GenoLaudo - Número de variantes que passaram na verificação: {passed} ({(passed / total) * 100:.2f}%)")
 print(f"GenoLaudo - Número de variantes reprovadas na verificação {filtered} ({(filtered / total) * 100:.2f}%)")
+print("=========================================================================================================")
 
 writer.close()
 vcf_file.close()
