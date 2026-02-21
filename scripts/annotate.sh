@@ -10,7 +10,7 @@ INTERVAR_DIR="$PROJECT_ROOT/data/intervar"
 TABLE_ANNOVAR="$ANNOVAR_DIR/table_annovar.pl"
 CONVERT_ANNOVAR="$ANNOVAR_DIR/convert2annovar.pl"
 DB_DIR="$ANNOVAR_DIR/humandb/dbs"
-REF_GENOME="$PROJECT_ROOT/data/genome/hg38.fa"
+GENOME_DIR="$PROJECT_ROOT/data/genome" # Modificado para apontar apenas para o diretório
 
 if [ "$#" -ne 2 ]; then
     echo "Uso: $0 <input_vcf> <output_basename>"
@@ -70,10 +70,33 @@ OPERATIONS="$OPERATIONS,f"
 # ==============================================================================
 # 2. NORMALIZAÇÃO E CONVERSÃO PARA AVINPUT
 # ==============================================================================
-echo "GenoLaudo - [1/3] Normalizando e convertendo para formato nativo ANNOVAR..."
+echo "GenoLaudo - [1/3] Preparando genoma, normalizando e convertendo para ANNOVAR..."
+
+# Busca dinâmica pelo arquivo FASTA no diretório genome (.fa ou .fasta)
+REF_GENOME=$(ls "$GENOME_DIR"/*.fa "$GENOME_DIR"/*.fasta 2>/dev/null | head -n 1)
+
+if [ -z "$REF_GENOME" ]; then
+    echo "[ERRO] Nenhum genoma de referência (.fa ou .fasta) encontrado em $GENOME_DIR."
+    exit 1
+fi
+
+echo "  -> Genoma de referência localizado: $(basename "$REF_GENOME")"
+
+# Verificação e criação do índice .fai
+if [ ! -f "${REF_GENOME}.fai" ]; then
+    echo "  -> Índice .fai não encontrado. Gerando índice dinamicamente com samtools..."
+    samtools faidx "$REF_GENOME"
+    if [ $? -ne 0 ]; then
+        echo "[ERRO] Falha ao indexar o genoma. Verifique se o samtools está instalado no seu ambiente conda."
+        exit 1
+    fi
+    echo "  -> Índice criado com sucesso!"
+fi
+
 NORM_VCF="${OUTPUT_BASE}.norm.vcf"
 AV_INPUT="${OUTPUT_BASE}.avinput"
 
+# A normalização agora usa o genoma encontrado dinamicamente
 bcftools norm -m -any -f "$REF_GENOME" "$INPUT_VCF" > "$NORM_VCF"
 
 # Converte para o formato seguro (impede o erro de reconstrução do VCF)
