@@ -212,4 +212,7 @@ __marimo__/
 #Data
 data/
 
+#snakemake
+.snakemake/
+
 
