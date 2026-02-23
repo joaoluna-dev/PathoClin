@@ -3,4 +3,5 @@ line-length = 79
 
 [tool.ruff.lint]
 preview = true
+ignore = ["F821"] #ignora as definições "snakemake." nos scripts
 
