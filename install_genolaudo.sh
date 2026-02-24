@@ -38,9 +38,8 @@ fi
 mkdir data/annovar/humandb/dbs
 
 #movendo os bancos de dados padrões do annovar para o diretório dbs, que na montagem receberá os bancos de dados do usuário
-mv hg38_refGene.txt dbs/
-mv hg38_refGeneMrna.fa dbs/
-mv hg38_refGeneVersion.txt dbs/
+mv hg38_refGeneWithVer.txt dbs/
+mv hg38_refGeneWIthVerMrna.fa dbs/
 
 #sanity check das databases padrão do annovar
 if [[ "$(ls -A data/annovar/humandb/dbs | wc -l)" -eq 0 ]]; then
