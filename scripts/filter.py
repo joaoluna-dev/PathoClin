@@ -1,17 +1,27 @@
-# script de filtragem do arquivo .vcf
-# referências:
-# Van der Auwera et al. (2013) - GATK Best Practices. 10.1002/0471250953.bi1110s43
-# Roy et al. (2018) - AMP/CAP Guidelines. 10.1016/j.jmoldx.2017.11.003.
-
 # importação dos módulos
 from cyvcf2 import VCF, Writer
+
+# referências científicas:
+#AUWERA, G. A. et al. From FastQ Data to High‐Confidence Variant Calls:
+# The Genome Analysis Toolkit Best Practices Pipeline. Current Protocols in Bioinformatics,
+# out. 2013. v. 43, n. 1. doi.org/10.1002/0471250953.bi1110s43
+#
+# ROY, S. et al. Standards and Guidelines for Validating Next-Generation Sequencing Bioinformatics Pipelines:
+# A Joint Recommendation of the Association for Molecular Pathology and the College of American Pathologists.
+# The Journal of molecular diagnostics: JMD, 1 jan. 2018. v. 20, n. 1, p. 4–27.
+# Disponível em: <https://www.ncbi.nlm.nih.gov/pubmed/29154853>. doi.org/10.1016/j.jmoldx.2017.11.003.
+
 
 print("==============================================================================")
 print("GenoLaudo - Iniciando filtragem de vcf...")
 print(
-    "Referências para os valores definidos para a filtragem: \n"
-    "Van der Auwera et al. (2013) - GATK Best Practices. DOI: doi.org/10.1002/0471250953.bi1110s43 \n"
-    "Roy et al. (2018) - AMP/CAP Guidelines. DOI: doi.org/10.1016/j.jmoldx.2017.11.003"
+    "Referências para para a filtragem: \n"
+    "AUWERA, G. A. et al. From FastQ Data to High‐Confidence Variant Calls: \n "
+    "The Genome Analysis Toolkit Best Practices Pipeline. Current Protocols in Bioinformatics, out. 2013. v. 43, n. 1. \n"
+    "\n ROY, S. et al. Standards and Guidelines for Validating Next-Generation Sequencing Bioinformatics Pipelines: \n "
+    "A Joint Recommendation of the Association for Molecular Pathology and the College of American Pathologists. \n "
+    "The Journal of molecular diagnostics: JMD, 1 jan. 2018. v. 20, n. 1, p. 4–27. \n "
+    "Disponível em: <https://www.ncbi.nlm.nih.gov/pubmed/29154853>. "
 )
 print("==============================================================================")
 # arquivos de entrada e saída
@@ -199,12 +209,8 @@ for variant in vcf_file:
 print("=========================================================================================================")
 print("GenoLaudo - Filtragem finalizada com sucesso!")
 print(f"GenoLaudo - Total de variantes processadas: {total}")
-print(
-    f"GenoLaudo - Número de variantes que passaram na verificação: {passed} ({(passed / total) * 100:.2f}%)"
-)
-print(
-    f"GenoLaudo - Número de variantes reprovadas na verificação {filtered} ({(filtered / total) * 100:.2f}%)"
-)
+print(f"GenoLaudo - Número de variantes que passaram na verificação: {passed} ({(passed / total) * 100:.2f}%)")
+print(f"GenoLaudo - Número de variantes reprovadas na verificação {filtered} ({(filtered / total) * 100:.2f}%)")
 print("=========================================================================================================")
 
 writer.close()

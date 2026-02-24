@@ -6,6 +6,19 @@ import pathlib
 import os
 import datetime
 
+#referências científicas
+#MACARTHUR, D. G. et al. Guidelines for investigating causality of sequence variants in human disease.
+# Nature, abr. 2014. v. 508, n. 7497, p. 469–476. Acesso em: 4 nov. 2019.
+#
+#PEDERSEN, B. S. et al. Effective variant filtering and expected candidate variant yield in studies of
+# rare human disease. npj Genomic Medicine, 15 jul. 2021. v. 6, n. 1. doi.org/10.1038/s41525-021-00227-3
+#
+#RICHARDS, S. et al. Standards and guidelines for the interpretation of sequence variants:
+# a joint consensus recommendation of the American College of Medical Genetics and Genomics and the Association
+# for Molecular Pathology. Genetics in medicine : official journal of the American College of Medical Genetics,
+# v. 17, n. 5, p. 405–24, 2015.
+
+
 if 'info_message' not in st.session_state:
     st.session_state.info_message = None
 
@@ -13,6 +26,9 @@ if 'info_message' not in st.session_state:
 #funções principais
 
 def filter_data(variants_df, exame, genes):
+    #(RICHARDS et al., 2015), (MACARTHUR et al., 2014), (PEDERSEN et al., 2021)
+    variants_df = variants_df[variants_df["ABraOM_Freq"].astype(float) <= 0.01]
+
     if (exame == "Painel Genético" or exame == "Gene") and not genes:
         st.session_state.info_message = "Nenhum gene foi selecionado para o exame {exame}"
         return None

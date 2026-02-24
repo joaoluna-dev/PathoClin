@@ -7,6 +7,12 @@ import gc
 import pandas as pd
 from cyvcf2 import VCF
 
+#referências científicas
+#RICHARDS, S. et al. Standards and guidelines for the interpretation of sequence variants:
+# a joint consensus recommendation of the American College of Medical Genetics and Genomics and the
+# Association for Molecular Pathology. Genetics in medicine :
+# official journal of the American College of Medical Genetics, 2015. v. 17, n. 5, p. 405–24.
+
 
 def parse_aachange(aachange):
     """
@@ -204,18 +210,13 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
     )
     print("GenoLaudo - Iniciando Parsing das anotações...")
     print(
-        "Referências para os valores obtidos para a montagem do json: \n"
-        "Richards, S., Aziz, N., Bale, S., Bick, D., Das, S., Gastier-Foster, J., Grody, W. W., Hegde, M., \n"
-        "Lyon, E., Spector, E., Voelkerding, K., Rehm, H. L., & ACMG Laboratory Quality Assurance Committee (2015).\n"
-        "Standards and guidelines for the interpretation of sequence variants: a joint \n "
-        "consensus recommendation of the American College of Medical Genetics and \n "
-        "Genomics and the Association for Molecular Pathology. \n "
-        "Genetics in medicine : official journal of the American College of Medical Genetics, 17(5), 405–424. \n"
-        "DOI: doi.org/10.1038/gim.2015.30"
+        "Referências para os campos do parsing: \n "
+        "RICHARDS, S. et al. Standards and guidelines for the interpretation of sequence variants: \n "
+        "a joint consensus recommendation of the American College of Medical Genetics and Genomics and the \n "
+        "Association for Molecular Pathology. Genetics in medicine : official journal of the American College of \n "
+        "Medical Genetics, 2015. v. 17, n. 5, p. 405–24. "
     )
-    print(
-        "=============================================================================="
-    )
+    print("==============================================================================")
 
     # obtenção dinâmica do orpha.txt
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -550,15 +551,9 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
     with open(output_json_path, "w", encoding="utf-8") as f:
         json.dump(final_output, f, indent=4, ensure_ascii=False)
 
-    print(
-        "=============================================================================="
-    )
-    print(
-        f"GenoLaudo - CONCLUÍDO! O laudo formatado está em: {output_json_path}"
-    )
-    print(
-        "=============================================================================="
-    )
+    print("==============================================================================")
+    print(f"GenoLaudo - CONCLUÍDO! O laudo formatado está em: {output_json_path}")
+    print("==============================================================================")
 
 
 if __name__ == "__main__":
