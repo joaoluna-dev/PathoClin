@@ -403,6 +403,15 @@ for json_file in files:
                     if submit_button:
                         execute()
                         st.info(st.session_state.info_message)
+                        if "Arquivo PDF criado com sucesso" in st.session_state.info_message:
+                            with open(pdf_file, "rb") as report_file:
+                                st.download_button(
+                                    label="Baixar laudo",
+                                    data=report_file,
+                                    file_name=f"{nome_paciente}.pdf",
+                                    mime="application/pdf",
+                                    icon="📄"
+                                )
 
 
 
