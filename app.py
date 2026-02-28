@@ -29,6 +29,8 @@ def filter_data(variants_df, exame, genes):
     #(RICHARDS et al., 2015), (MACARTHUR et al., 2014), (PEDERSEN et al., 2021)
     variants_df = variants_df[variants_df["ABraOM_Freq"].astype(float) <= 0.01]
 
+    variants_df = variants_df.drop('ABraOM_Freq', axis=1)
+
     if (exame == "Painel Genético" or exame == "Gene") and not genes:
         st.session_state.info_message = "Nenhum gene foi selecionado para o exame {exame}"
         return None
@@ -349,7 +351,7 @@ for json_file in files:
                         targets = st.text_area(label="Insira os alvos do exame. Caso tenha selecionado 'Gene', "
                                                           "Escreva o nome do Gene(s) de interesse. Caso tenha selecionado "
                                                           "'Painel Genético', insira o nome dos genes, separados por espaço. "
-                                                          "Caso tenha selecionado 'Exoma', deixe em branco.*")
+                                                          "Caso tenha selecionado 'Exoma', deixe em branco.*").upper()
                         if not targets:
                             targets = None
                         with col5:
