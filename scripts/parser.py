@@ -53,7 +53,7 @@ def parse_disease(clndn_str):
     parts = str(clndn_str).split("|")
     valid_diseases = []
 
-    # itera sobre os elementos divididos pelo |
+    # itera sobre os elements divididos pelo |
     for p in parts:
         clean_name = p.replace("_", " ").strip()  # remove caracteres _
         # filtra dados que não são relevantes
@@ -299,8 +299,7 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
                 "Evidência ACMG": "",
                 "Doença": "Not provided",
                 "Herança": "Unknown",
-                "Frequência ABraOM": 0,
-                "Origem Parental": "-",
+                "Frequência ABraOM": 0
             }
 
             # armazena a chave modificada para o cruzamento nos Passos 2 e 3
@@ -535,11 +534,9 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
                     # Override Secundário: Utiliza a classificação do InterVar APENAS se o ClinVar for omisso (Not classified) no Passo 2
                     if samples_dict[sample_name][k]["Classificação"] == "Not classified":
                         samples_dict[sample_name][k]["Classificação"] = classification
-
-                    # As evidências calculadas pelo InterVar continuam sendo mantidas para suplementar o laudo
-                    samples_dict[sample_name][k]["Evidência ACMG"] = (
-                        acmg_evidence
-                    )
+                        samples_dict[sample_name][k]["Evidência ACMG"] = acmg_evidence
+                    else:
+                        samples_dict[sample_name][k]["Evidência ACMG"] = "Classificação obtida da base de dados do Clinvar"
 
                     # preenche a herança do orphanet se estiver disponível
                     if omim_inheritance != "Unknown":
