@@ -27,10 +27,11 @@ if 'info_message' not in st.session_state:
 
 def filter_data(variants_df, exame, genes):
     #(RICHARDS et al., 2015), (MACARTHUR et al., 2014), (PEDERSEN et al., 2021)
-    #acmg_classification = ["Pathogenic", "Likely Pathogenic", "Uncertain Significance"]
     variants_df = variants_df[variants_df["Frequência ABraOM"].astype(float) <= 0.01]
     variants_df = variants_df.drop('Frequência ABraOM', axis=1)
-    #variants_df = variants_df[variants_df["Classificação"].str.contains(acmg_classification)]
+
+    acmg_classification = ["pathogenic", "likely pathogenic", "uncertain significance"]
+    variants_df = variants_df[variants_df["Classificação"].str.lower().isin(acmg_classification)]
 
     if (exame == "Painel Genético" or exame == "Gene") and not genes:
         st.session_state.info_message = "Nenhum gene foi selecionado para o exame {exame}"
