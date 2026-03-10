@@ -7,8 +7,9 @@ import gc
 import pandas as pd
 from cyvcf2 import VCF
 
-#referências científicas
-#RICHARDS, S. et al. Standards and guidelines for the interpretation of sequence variants:
+
+# referências científicas
+# RICHARDS, S. et al. Standards and guidelines for the interpretation of sequence variants:
 # a joint consensus recommendation of the American College of Medical Genetics and Genomics and the
 # Association for Molecular Pathology. Genetics in medicine :
 # official journal of the American College of Medical Genetics, 2015. v. 17, n. 5, p. 405–24.
@@ -322,6 +323,7 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
     # next(): itera sobre o elemento até obter a coluna correspondente, caso o elemento não exista, retorna None
     clndn_col = next((c for c in header if c == "CLNDN"), None)
     abraom_col = next((c for c in header if c == "abraom_freq"), None)
+    clnsig_col = next((c for c in header if c == "CLNSIG"), None)  # Nova detecção da coluna do ClinVar
 
     # colunas padrão do ANNOVAR
     # adiciona a cols_anno as colunas obtidas anteriormente caso elas existam
@@ -339,6 +341,8 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
         cols_anno.append(clndn_col)
     if abraom_col:
         cols_anno.append(abraom_col)
+    if clnsig_col:
+        cols_anno.append(clnsig_col)  # Adicionada para extração
 
     # itera sobre as linhas do arquivo do ANNOVAR, retornando chunks de 100000 linhas, para evitar estouro da memória
     # retorna apenas os valores de colunas em cols_anno
@@ -350,13 +354,13 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
     # verifica se ela está no set de variantes com genótipo válido
     for chunk in chunk_iterator:
         chunk["Key"] = (
-            chunk["Chr"].str.replace("chr", "")
-            + "_"
-            + chunk["Start"]
-            + "_"
-            + chunk["Ref"]
-            + "_"
-            + chunk["Alt"]
+                chunk["Chr"].str.replace("chr", "")
+                + "_"
+                + chunk["Start"]
+                + "_"
+                + chunk["Ref"]
+                + "_"
+                + chunk["Alt"]
         )
         chunk = chunk[chunk["Key"].isin(all_valid_keys)]
 
@@ -379,16 +383,22 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
             if abraom_col
             else ["."] * len(keys_arr)
         )
+        clnsig_arr = (
+            chunk[clnsig_col].fillna("").values
+            if clnsig_col
+            else [""] * len(keys_arr)
+        )  # Array com os dados do ClinVar
 
         # iteração sobre os arrays do ANNOVAR, utilizando o zip para iteração paralela
         for (
-            k,
-            gene,
-            func,
-            exonic,
-            aachange,
-            clndn_val,
-            abraom_val,
+                k,
+                gene,
+                func,
+                exonic,
+                aachange,
+                clndn_val,
+                abraom_val,
+                clnsig_val,  # Variável iteradora do ClinVar
         ) in zip(
             keys_arr,
             genes_arr,
@@ -397,6 +407,7 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
             aachanges_arr,
             clndn_arr,
             abraom_arr,
+            clnsig_arr,  # Inserida na iteração
         ):
             # obtenção de valores e saneamento
             location = (
@@ -408,6 +419,15 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
             disease = (
                 parse_disease(clndn_val) if clndn_col else "Not provided"
             )  # obtenção da doença
+
+            # extração e formatação da classificação do ClinVar
+            clinvar_sig = ""
+            if clnsig_col and str(clnsig_val).strip() not in [".", ""]:
+                # extrai a primeira classificação (caso haja múltiplas) e formata adequadamente
+                raw_sig = str(clnsig_val).split(",")[0].replace("_", " ").capitalize()
+                # filtra classificações inúteis ou não-conclusivas
+                if raw_sig.lower() not in ["not provided", "conflicting interpretations of pathogenicity", ""]:
+                    clinvar_sig = raw_sig
 
             # formatação da frequência do ABraOM como numérico (float/int) para garantir a filtragem
             try:
@@ -428,9 +448,13 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
                     samples_dict[sample_name][k]["Doença"] = disease
                     samples_dict[sample_name][k]["Frequência ABraOM"] = abraom_float
 
+                    # Prioridade Clínica: se houver classificação válida do ClinVar, ela é registrada imediatamente
+                    if clinvar_sig:
+                        samples_dict[sample_name][k]["Classificação"] = clinvar_sig
+
         # remoção dos arrays armazenados
         del chunk, keys_arr, genes_arr, funcs_arr, exonics_arr, aachanges_arr
-        del clndn_arr, abraom_arr
+        del clndn_arr, abraom_arr, clnsig_arr  # Memória do array do ClinVar limpa
         gc.collect()  # limpeza de resíduos na memória
 
     # ===========================================================================
@@ -470,13 +494,13 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
     # verifica se ela está no set de variantes com genótipo válido para as amostras
     for iv_chunk in chunk_iterator_iv:
         iv_chunk["Key"] = (
-            iv_chunk[chr_col].str.replace("chr", "")
-            + "_"
-            + iv_chunk["Start"]
-            + "_"
-            + iv_chunk["Ref"]
-            + "_"
-            + iv_chunk["Alt"]
+                iv_chunk[chr_col].str.replace("chr", "")
+                + "_"
+                + iv_chunk["Start"]
+                + "_"
+                + iv_chunk["Ref"]
+                + "_"
+                + iv_chunk["Alt"]
         )
         iv_chunk = iv_chunk[iv_chunk["Key"].isin(all_valid_keys)]
 
@@ -492,7 +516,7 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
 
         # iteração sobre os arrays do intervar, utilizando o zip para iteração paralela
         for k, raw_class, pheno_val in zip(
-            keys_arr_iv, classes_arr, pheno_arr
+                keys_arr_iv, classes_arr, pheno_arr
         ):
             classification, acmg_evidence = parse_intervar(
                 raw_class
@@ -507,9 +531,12 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
             # utiliza a HGVS para identificar a variante correta
             for sample_name in sample_names:
                 if k in samples_dict[sample_name]:
-                    samples_dict[sample_name][k]["Classificação"] = (
-                        classification
-                    )
+
+                    # Override Secundário: Utiliza a classificação do InterVar APENAS se o ClinVar for omisso (Not classified) no Passo 2
+                    if samples_dict[sample_name][k]["Classificação"] == "Not classified":
+                        samples_dict[sample_name][k]["Classificação"] = classification
+
+                    # As evidências calculadas pelo InterVar continuam sendo mantidas para suplementar o laudo
                     samples_dict[sample_name][k]["Evidência ACMG"] = (
                         acmg_evidence
                     )
@@ -525,8 +552,8 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
                         "Doença", "Not provided"
                     )
                     if (
-                        current_disease == "Not provided"
-                        or current_disease == "Unknown"
+                            current_disease == "Not provided"
+                            or current_disease == "Unknown"
                     ):
                         if omim_disease != "Not provided":
                             samples_dict[sample_name][k]["Doença"] = (
