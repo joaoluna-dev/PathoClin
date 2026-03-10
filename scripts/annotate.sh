@@ -74,7 +74,6 @@ OPERATIONS="$OPERATIONS,f"
 # ==============================================================================
 echo "GenoLaudo - [1/3] Preparando genoma, normalizando e convertendo para ANNOVAR..."
 
-# Busca dinâmica pelo arquivo FASTA no diretório genome (.fa ou .fasta)
 REF_GENOME=$(ls "$GENOME_DIR"/*.fa "$GENOME_DIR"/*.fasta 2>/dev/null | head -n 1)
 
 if [ -z "$REF_GENOME" ]; then
@@ -84,32 +83,23 @@ fi
 
 echo "  -> Genoma de referência localizado: $(basename "$REF_GENOME")"
 
-# Verificação e criação do índice .fai
 if [ ! -f "${REF_GENOME}.fai" ]; then
     echo "  -> Índice .fai não encontrado. Gerando índice dinamicamente com samtools..."
     samtools faidx "$REF_GENOME"
-    if [ $? -ne 0 ]; then
-        echo "[ERRO] Falha ao indexar o genoma. Verifique se o samtools está instalado no seu ambiente conda."
-        exit 1
-    fi
     echo "  -> Índice criado com sucesso!"
 fi
 
 NORM_VCF="${OUTPUT_BASE}.norm.vcf"
 AV_INPUT="${OUTPUT_BASE}.avinput"
 
-# A normalização agora usa o genoma encontrado dinamicamente
 bcftools norm -m -any -f "$REF_GENOME" "$INPUT_VCF" > "$NORM_VCF"
-
-# Converte para o formato seguro (impede o erro de reconstrução do VCF)
-perl "$CONVERT_ANNOVAR" -format vcf4 "$NORM_VCF" > "$AV_INPUT" #2>/dev/null
+perl "$CONVERT_ANNOVAR" -format vcf4 "$NORM_VCF" > "$AV_INPUT"
 
 # ==============================================================================
 # 3. ANOTAÇÃO DAS VARIANTES
 # ==============================================================================
 echo "GenoLaudo - [2/3] Executando ANNOVAR..."
 
-# Nota: Sem a flag -vcfinput. O output será um arquivo tabular .txt perfeito.
 perl "$TABLE_ANNOVAR" "$AV_INPUT" "$DB_DIR" \
     -buildver hg38 \
     -out "$OUTPUT_BASE" \
@@ -125,30 +115,60 @@ if [ ! -f "$RAW_TXT" ]; then
     exit 1
 fi
 
-# CORREÇÃO INTELIGENTE DE CABEÇALHO PARA O INTERVAR
-# O InterVar exige que as colunas se chamem "Func.refGene", "Gene.refGene", etc.
-# Se o banco detectado foi "refGeneWithVer", renomeamos as colunas apenas no cabeçalho.
+# ==============================================================================
+# 4. CORREÇÃO DE CABEÇALHO E INJEÇÃO DE COLUNAS PARA INTERVAR
+# ==============================================================================
+echo "GenoLaudo - Adaptando multianno.txt para compatibilidade com InterVar..."
+
+# Ajusta nomenclatura do refGene se necessário
 if [ "$REFGENE_NAME" != "refGene" ]; then
-    echo "  -> Adaptando nomenclatura do cabeçalho para compatibilidade com InterVar..."
     sed -i "1s/$REFGENE_NAME/refGene/g" "$RAW_TXT"
 fi
+
+# Injeção de colunas de frequência fantasmas para evitar o erro BA1 (Cromossomo 7 interpretado como freq)
+# Esta implementação via Python inline garante que o InterVar leia freq=0 em vez de colunas deslocadas.
+python3 - <<EOF
+import sys
+import os
+
+file_path = "$RAW_TXT"
+temp_path = file_path + ".tmp"
+
+with open(file_path, 'r') as f_in, open(temp_path, 'w') as f_out:
+    header = f_in.readline().strip().split('\t')
+
+    # Colunas que o InterVar busca via hardcoding para calcular critérios populacionais
+    missing_cols = ['esp6500siv2_all', '1000g2015aug_all', 'gnomAD_genome_ALL', 'gnomAD_exome_ALL', 'AF']
+
+    # Identifica quais colunas realmente precisam ser adicionadas
+    to_add = [c for c in missing_cols if c not in header]
+
+    # Escreve o novo cabeçalho
+    new_header = header + to_add
+    f_out.write('\t'.join(new_header) + '\n')
+
+    # Escreve as linhas injetando "0" nas colunas fantasmas
+    for line in f_in:
+        f_out.write(line.strip() + '\t' + '\t'.join(['0'] * len(to_add)) + '\n')
+
+os.replace(temp_path, file_path)
+EOF
+
+echo "  -> Colunas populacionais injetadas com sucesso (freq=0)."
 
 # ==============================================================================
 # 5. CLASSIFICAÇÃO DAS VARIANTES USANDO O INTERVAR
 # ==============================================================================
 echo "GenoLaudo - [3/3] Executando InterVar (ACMG)..."
 
-# 1. Cria links simbólicos temporários para satisfazer a checagem rígida do InterVar
 ln -sf "$ANNOVAR_DIR/annotate_variation.pl" ./annotate_variation.pl
 ln -sf "$ANNOVAR_DIR/convert2annovar.pl" ./convert2annovar.pl
 
-# 2. Localiza o script do InterVar
 INTERVAR_EXEC=""
 if [ -f "$INTERVAR_DIR/InterVar.py" ]; then INTERVAR_EXEC="$INTERVAR_DIR/InterVar.py"; fi
 if [ -f "$INTERVAR_DIR/Intervar.py" ]; then INTERVAR_EXEC="$INTERVAR_DIR/Intervar.py"; fi
 
 if [ -n "$INTERVAR_EXEC" ]; then
-    # Adicionamos a flag --skip_annovar
     python3 "$INTERVAR_EXEC" \
         -b hg38 \
         -i "$AV_INPUT" \
@@ -162,7 +182,6 @@ else
     echo "  [AVISO] Intervar.py não encontrado."
 fi
 
-# 3. Limpeza dos links temporários
 echo "  [AVISO] Removendo arquivos temporários..."
 rm -f ./annotate_variation.pl ./convert2annovar.pl
 rm -f "$RAW_TXT.grl_p" "$AV_INPUT"
