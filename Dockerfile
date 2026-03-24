@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential python3-dev bcftools samtools tabix \
+    build-essential python3-dev perl bcftools samtools tabix \
     libpango-1.0-0 libpangoft2-1.0-0 libjpeg-dev libopenjp2-7-dev \
     libffi-dev shared-mime-info libcairo2 zlib1g-dev libbz2-dev \
     liblzma-dev libcurl4-openssl-dev libssl-dev fonts-dejavu fonts-ubuntu \
