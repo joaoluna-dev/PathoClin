@@ -1,7 +1,7 @@
 #!/bin/bash
 
 HOST="0.0.0.0"
-DATA_CLEANING="ON" #ON ou OFF para limpeza de dados temporários
+DATA_CLEANING="$1" #ON ou OFF para limpeza de dados temporários
 #definição de cores para o splash screen
 CYAN='\033[1;36m'
 NC='\033[0m' #serve para voltar o terminal para a cor normal
@@ -33,7 +33,7 @@ snakemake --cores all
 echo -e "${CYAN}"
 echo "Executando interface visual..."
 echo -e "${NC}"
-streamlit run app.py --server.address $HOST
+# streamlit run app.py --server.address $HOST
 
 #remoção dos arquivos temporários, para manter a segurança dos dados
 if [[ "$DATA_CLEANING" == "ON" ]]; then
