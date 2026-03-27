@@ -29,21 +29,9 @@ echo "Executando pipeline snakemake..."
 echo -e "${NC}"
 snakemake --cores all
 
-#inicialização do servidor do streamlit app.py, com a interface visual
-echo -e "${CYAN}"
-echo "Executando interface visual..."
-echo -e "${NC}"
-# streamlit run app.py --server.address $HOST
-
 #remoção dos arquivos temporários, para manter a segurança dos dados
 if [[ "$DATA_CLEANING" == "ON" ]]; then
-  echo -e "${CYAN}"
-  echo "Iniciando limpeza dos dados temporários..."
-  echo -e "${NC}"
-  rm data/temp/*.intervar
-  rm data/temp/*.vcf
-  rm data/temp/*.txt
-  rm data/temp/*.json
+  ./clean_data.sh
 elif [[ "$DATA_CLEANING" == "OFF" ]]; then
   :
 else
