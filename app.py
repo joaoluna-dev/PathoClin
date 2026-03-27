@@ -5,6 +5,9 @@ import pandas as pd
 import pathlib
 import os
 import datetime
+import time
+import subprocess
+from cyvcf2 import VCF
 
 #referências científicas
 #MACARTHUR, D. G. et al. Guidelines for investigating causality of sequence variants in human disease.
@@ -18,9 +21,28 @@ import datetime
 # for Molecular Pathology. Genetics in medicine : official journal of the American College of Medical Genetics,
 # v. 17, n. 5, p. 405–24, 2015.
 
+#inicializando variáveis de sessão
 
 if 'info_message' not in st.session_state:
     st.session_state.info_message = None
+
+if 'status_pipeline' not in st.session_state:
+    st.session_state.status_pipeline = 'pendente'
+
+if 'limpeza_dos_dados' not in st.session_state:
+    st.session_state.limpeza_dos_dados = 'OFF'
+
+#header do site
+st.set_page_config(
+	page_title='GenoLaudo: Bioinformática Clínica',
+	page_icon='🧬',
+	layout='wide'
+)
+st.logo("images/logo1.png", size="large")
+
+#título principal
+st.title("Genolaudo")
+st.text("João Gabriel, 2026")
 
 
 #funções principais
@@ -281,144 +303,207 @@ def execute():
         st.session_state.info_message = f"Ocorreu um erro durante a criação do laudo: {e}"
 
 
-#header do site
-st.set_page_config(
-	page_title='GenoLaudo: Bioinformática Clínica',
-	page_icon='🧬',
-	layout='wide'
-)
-st.logo("images/logo1.png", size="large")
-
-#título principal
-st.title("Genolaudo")
-st.text("João Gabriel, 2026")
-
-#caminho absoluto do json com as anotações (estático)
-try:
+# ==========================================
+# Tela inicial do software
+# ==========================================
+if st.session_state.status_pipeline == 'pendente':
+    #obtenção do caminho onde os vcfs brutos devem ser registrados
     app_path = pathlib.Path(__file__).resolve()
     root = app_path.parent
-    json_file_path = root / "data" / "temp"
-    output_path = root / "data" / "output"
-except Exception as e:
-    st.error(f"Ocorreu um erro durante a leitura dos arquivos de anotação: {e}")
-#lista com os arquivos de laudos
-files = []
+    vcf_file_path = root / "data" / "raw"
 
-#obtendo os arquivos json com o laudo de informações
-for file in os.listdir(json_file_path):
-    if file.endswith(".json"):
-        files.append(file)
+    st.subheader("Inicializador do pipeline")
 
-counter = 0
+    #botão para upload dos arquivos de chamada de variante, para o interior do pipeline
+    files = st.file_uploader(label='Faça o upload dos arquivos VCF (.bcf, .vcf, .vcf.gz) aqui.',
+                             accept_multiple_files=True,
+                             type=['bcf', 'vcf', 'vcf.gz'])
+    if files is not None and len(files) > 0:
+        #cria os arquivos em que o conteúdo submetido será escrito
+        for file in files:
+            file_path = os.path.join(vcf_file_path, file.name)
 
-#lendo os arquivos .json obtidos
-for json_file in files:
-    json_folder = root / output_path / json_file.strip("_report.json")
-    if not os.path.exists(json_folder):
-        os.mkdir(json_folder)
-    with st.expander(f"Arquivo {json_file}", expanded=False):
-        with open(f'{json_file_path}/{json_file}', 'r') as file:
-            data = json.load(file)
-            for amostra in data:
-                for sample, variants in amostra.items():
-                    pdf_file = json_folder / f"{sample}.pdf"
-                    variants_dataframe = pd.DataFrame(variants)
-                    counter += 1
-                    with st.form(f"sample_{counter}_form"):
-                        st.header(f"Formulário da amostra {sample}")
-                        st.subheader("1. Dados de Identificação do Paciente")
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            nome_paciente = st.text_input("Nome completo do paciente*")
-                            rg_identificacao = st.text_input("Nº de Registro (RG/CPF/Prontuário)*")
-                        with col2:
-                            data_nascimento = st.date_input("Data de nascimento*", min_value=datetime.date(1900, 1, 1))
-                            sexo_biologico = st.selectbox("Sexo biológico*",
-                                                          ["Feminino", "Masculino", "Intersexo", "Não informado"])
-                        with col3:
-                            nome_social = st.text_input("Nome social (se aplicável)")
-                            nome_mae = st.text_input("Nome da mãe")
+        #abre os arquivos criados, e escreve o conteúdo binário nos mesmos, salvando os uploads
+        with open(file_path, "wb") as f:
+            f.write(file.getbuffer())
 
-                        st.markdown("---")
+    #sistema de verificação dos vcfs submetidos, para evitar arquivos corrompidos ou incompatíveis
+    with st.expander(f"Arquivos VCF válidos detectados:", expanded=False):
+        for file in os.listdir(vcf_file_path):
+            try:
+                vcf = VCF(str(vcf_file_path / file))
+                if vcf:
+                    st.success(file)
+                vcf.close()
+            except Exception as e:
+                st.error(f"{file}: {e}. Verifique o arquivo e tente novamente.")
+                os.remove(str(vcf_file_path / file))
 
-                        st.subheader("2. Dados da Amostra e do Pedido Médico")
-                        col4, col5, col6 = st.columns(3)
-                        with col4:
-                            nome_solicitante = st.text_input("Nome do médico solicitante*")
-                            nome_exame = st.selectbox("Nome do exame*",
-                                                      options=("Painel Genético",
-                                                               "Exoma",
-                                                               "Gene"),
-                                                      index=0)
-                        targets = st.text_area(label="Insira os alvos do exame. Caso tenha selecionado 'Gene', "
-                                                          "Escreva o nome do Gene(s) de interesse. Caso tenha selecionado "
-                                                          "'Painel Genético', insira o nome dos genes, separados por espaço. "
-                                                          "Caso tenha selecionado 'Exoma', deixe em branco.*").upper()
-                        if not targets:
-                            targets = None
-                        with col5:
-                            data_coleta = st.date_input("Data da coleta*")
-                            horario_coleta = st.time_input("Horário da coleta")
-                        with col6:
-                            tipo_material = st.selectbox("Tipo de material biológico*",
-                                                         ["Sangue periférico", "Saliva", "Swab bucal", "Tecido fresco",
-                                                          "FFPE", "Outro"])
-                        tipo_material_outro = st.text_area("Especifique o material, caso tenha selecionado 'Outro'*")
+    #habilita ou desativa a limpeza dos arquivos temporários automaticamente após a execução
+    toggle_limpeza = st.toggle(label='Limpar dados temporários após execução', value=False)
+    if toggle_limpeza:
+        st.session_state.limpeza_dos_dados = 'ON'
+    else:
+        st.session_state.limpeza_dos_dados = 'OFF'
+    #ao clicar no botão, o pipeline entra em estado de execução, e a página é recarregada para exibir o processo
+    if st.button("Executar Análise", type="primary"):
+        st.session_state.status_pipeline = 'executando'
+        st.rerun()
 
-                        st.markdown("---")
+# ==========================================
+# Execução do pipeline
+# ==========================================
+elif st.session_state.status_pipeline == 'executando':
+    st.subheader("Processando Dados...")
 
-                        st.subheader("3. Dados Analíticos e Clínicos")
-                        col7, col8 = st.columns(2)
-                        with col7:
-                            metodo_analitico = st.text_input("Método analítico*",
-                                                             value="Sequenciamento de Nova Geração (NGS)")
-                            valores_referencia = st.text_input("Valores de referência / Genoma Base*", value="GRCh38")
-                        with col8:
-                            info_clinicas = st.text_area(
-                                "Informações clínicas adicionais (Uso de medicamentos, histórico familiar, etc.)")
+    # st.status mantém o usuário informado sobre o avanço
+    with st.status("Executando pipeline bioinformático...", expanded=True) as status:
+        st.write("Carregando arquivos de entrada...")
+        st.write("Iniciando execução do pipeline...")
+        subprocess.run(["./run.sh", f"{st.session_state.limpeza_dos_dados}"], check=True)
+        st.write("Finalizando execução...")
+        status.update(label="Processamento concluído!", state="complete", expanded=False)
 
-                        limitacoes_teste = st.text_area("Limitações técnicas e dados para interpretação*", height=100)
+    # Ao terminar, avança o estado e recarrega a interface
+    st.session_state.status_pipeline = 'concluido'
+    st.rerun()
 
-                        col9, col10 = st.columns(2)
-                        with col9:
-                            metodologia_in_house = st.checkbox("Exame realizado por Metodologia Própria (in house)")
-                        with col10:
-                            material_com_restricao = st.checkbox("Material biológico aceito com restrição")
-                            if material_com_restricao:
-                                motivo_restricao = st.text_input("Especifique a restrição (ex: hemólise, volume baixo)")
+# ==========================================
+# Formulários para o preenchimento das informações clínicas
+# ==========================================
+elif st.session_state.status_pipeline == 'concluido':
+    #caminho absoluto do json com as anotações (estático)
+    try:
+        app_path = pathlib.Path(__file__).resolve()
+        root = app_path.parent
+        json_file_path = root / "data" / "temp"
+        output_path = root / "data" / "output"
+    except Exception as e:
+        st.error(f"Ocorreu um erro durante a leitura dos arquivos de anotação: {e}")
+    #lista com os arquivos de laudos
+    files = []
 
-                        st.markdown("---")
+    #obtendo os arquivos json com o laudo de informações
+    for file in os.listdir(json_file_path):
+        if file.endswith(".json"):
+            files.append(file)
 
-                        st.subheader("4. Dados Institucionais e Assinatura (Preenchimento Manual)")
-                        col11, col12 = st.columns(2)
-                        with col11:
-                            nome_servico = st.text_input("Nome do Serviço / Laboratório*")
-                            cnes_servico = st.text_input("Número do CNES*")
-                            endereco_telefone = st.text_area("Endereço e Telefone de contato*")
-                        with col12:
-                            dados_rt = st.text_input("Nome e Registro do Responsável Técnico (RT)*")
-                            dados_assinatura = st.text_input("Nome e Registro do profissional que assina o laudo*")
-                            data_emissao = st.date_input("Data de emissão do laudo*", value=datetime.date.today())
+    counter = 0
 
-                        st.text("* Campos obrigatórios.")
-                        # Botão de submissão do formulário
-                        submit_button = st.form_submit_button(label=f"Salvar Laudo: {sample}")
+    #lendo os arquivos .json obtidos
+    for json_file in files:
+        json_folder = root / output_path / json_file.strip("_report.json")
+        if not os.path.exists(json_folder):
+            os.mkdir(json_folder)
+        with st.expander(f"Arquivo {json_file}", expanded=False):
+            with open(f'{json_file_path}/{json_file}', 'r') as file:
+                data = json.load(file)
+                for amostra in data:
+                    for sample, variants in amostra.items():
+                        pdf_file = json_folder / f"{sample}.pdf"
+                        variants_dataframe = pd.DataFrame(variants)
+                        counter += 1
+                        with st.form(f"sample_{counter}_form"):
+                            st.header(f"Formulário da amostra {sample}")
+                            st.subheader("1. Dados de Identificação do Paciente")
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                nome_paciente = st.text_input("Nome completo do paciente*")
+                                rg_identificacao = st.text_input("Nº de Registro (RG/CPF/Prontuário)*")
+                            with col2:
+                                data_nascimento = st.date_input("Data de nascimento*", min_value=datetime.date(1900, 1, 1))
+                                sexo_biologico = st.selectbox("Sexo biológico*",
+                                                              ["Feminino", "Masculino", "Intersexo", "Não informado"])
+                            with col3:
+                                nome_social = st.text_input("Nome social (se aplicável)")
+                                nome_mae = st.text_input("Nome da mãe")
 
-                    if submit_button:
-                        execute()
-                        st.info(st.session_state.info_message)
-                        if "Arquivo PDF criado com sucesso" in st.session_state.info_message:
-                            with open(pdf_file, "rb") as report_file:
-                                st.download_button(
-                                    label="Baixar laudo",
-                                    data=report_file,
-                                    file_name=f"{nome_paciente}.pdf",
-                                    mime="application/pdf",
-                                    icon="📄"
-                                )
+                            st.markdown("---")
 
+                            st.subheader("2. Dados da Amostra e do Pedido Médico")
+                            col4, col5, col6 = st.columns(3)
+                            with col4:
+                                nome_solicitante = st.text_input("Nome do médico solicitante*")
+                                nome_exame = st.selectbox("Nome do exame*",
+                                                          options=("Painel Genético",
+                                                                   "Exoma",
+                                                                   "Gene"),
+                                                          index=0)
+                            targets = st.text_area(label="Insira os alvos do exame. Caso tenha selecionado 'Gene', "
+                                                              "Escreva o nome do Gene(s) de interesse. Caso tenha selecionado "
+                                                              "'Painel Genético', insira o nome dos genes, separados por espaço. "
+                                                              "Caso tenha selecionado 'Exoma', deixe em branco.*").upper()
+                            if not targets:
+                                targets = None
+                            with col5:
+                                data_coleta = st.date_input("Data da coleta*")
+                                horario_coleta = st.time_input("Horário da coleta")
+                            with col6:
+                                tipo_material = st.selectbox("Tipo de material biológico*",
+                                                             ["Sangue periférico", "Saliva", "Swab bucal", "Tecido fresco",
+                                                              "FFPE", "Outro"])
+                            tipo_material_outro = st.text_area("Especifique o material, caso tenha selecionado 'Outro'*")
 
+                            st.markdown("---")
 
+                            st.subheader("3. Dados Analíticos e Clínicos")
+                            col7, col8 = st.columns(2)
+                            with col7:
+                                metodo_analitico = st.text_input("Método analítico*",
+                                                                 value="Sequenciamento de Nova Geração (NGS)")
+                                valores_referencia = st.text_input("Valores de referência / Genoma Base*", value="GRCh38")
+                            with col8:
+                                info_clinicas = st.text_area(
+                                    "Informações clínicas adicionais (Uso de medicamentos, histórico familiar, etc.)")
 
+                            limitacoes_teste = st.text_area("Limitações técnicas e dados para interpretação*", height=100)
 
+                            col9, col10 = st.columns(2)
+                            with col9:
+                                metodologia_in_house = st.checkbox("Exame realizado por Metodologia Própria (in house)")
+                            with col10:
+                                material_com_restricao = st.checkbox("Material biológico aceito com restrição")
+                                if material_com_restricao:
+                                    motivo_restricao = st.text_input("Especifique a restrição (ex: hemólise, volume baixo)")
 
+                            st.markdown("---")
+
+                            st.subheader("4. Dados Institucionais e Assinatura (Preenchimento Manual)")
+                            col11, col12 = st.columns(2)
+                            with col11:
+                                nome_servico = st.text_input("Nome do Serviço / Laboratório*")
+                                cnes_servico = st.text_input("Número do CNES*")
+                                endereco_telefone = st.text_area("Endereço e Telefone de contato*")
+                            with col12:
+                                dados_rt = st.text_input("Nome e Registro do Responsável Técnico (RT)*")
+                                dados_assinatura = st.text_input("Nome e Registro do profissional que assina o laudo*")
+                                data_emissao = st.date_input("Data de emissão do laudo*", value=datetime.date.today())
+
+                            st.text("* Campos obrigatórios.")
+                            #botão de submissão do formulário
+                            submit_button = st.form_submit_button(label=f"Salvar Laudo: {sample}")
+
+                        if submit_button:
+                            execute()
+                            st.info(st.session_state.info_message)
+                            if "Arquivo PDF criado com sucesso" in st.session_state.info_message:
+                                with open(pdf_file, "rb") as report_file:
+                                    st.download_button(
+                                        label="Baixar laudo",
+                                        data=report_file,
+                                        file_name=f"{nome_paciente}.pdf",
+                                        mime="application/pdf",
+                                        icon="📄"
+                                    )
+    restart_analysis = st.button(label="Reiniciar análise", type="primary")
+    if restart_analysis:
+        st.session_state.status_pipeline = 'pendente'
+        st.rerun()
+    clean_data = st.button(label="Limpar dados temporários e reiniciar", type="primary")
+    if clean_data:
+        try:
+            subprocess.run(["./clean_data.sh"])
+            st.session_state.status_pipeline = 'pendente'
+            st.rerun()
+        except FileNotFoundError:
+            st.error("Erro ao apagar arquivos. Reinicie as análises para regenerar os mesmos.")
