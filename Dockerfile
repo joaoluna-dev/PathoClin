@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/
 
 RUN chmod +x /app/run.sh
+RUN chmod +x /app/clean_data.sh
 
 EXPOSE 8501
 

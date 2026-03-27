@@ -30,6 +30,7 @@ From: python:3.10-slim
     cd /app
     pip install --no-cache-dir -r requirements.txt
     chmod +x /app/run.sh
+    chmod +x /app/clean_data.sh
 
 %runscript
     cd /app
