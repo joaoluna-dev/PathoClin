@@ -340,8 +340,7 @@ if st.session_state.status_pipeline == 'pendente':
 
     clean_vcf = st.button("Limpar VCFs submetidos", type="primary")
     if clean_vcf:
-        for file in os.listdir(vcf_file_path):
-            os.remove(str(vcf_file_path / file))
+        subprocess.run(["./clean_data.sh", "vcfs"])
         st.session_state.status_pipeline = 'pendente'
         st.rerun()
 
@@ -502,7 +501,7 @@ elif st.session_state.status_pipeline == 'concluido':
     clean_data = st.button(label="Limpar dados temporários e reiniciar", type="primary")
     if clean_data:
         try:
-            subprocess.run(["./clean_data.sh"])
+            subprocess.run(["./clean_data.sh", "temp_files"])
             st.session_state.status_pipeline = 'pendente'
             st.rerun()
         except FileNotFoundError:
