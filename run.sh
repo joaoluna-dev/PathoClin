@@ -1,8 +1,6 @@
 #!/bin/bash
 
-HOST="0.0.0.0"
-DATA_CLEANING="$1" #ON ou OFF para limpeza de dados temporários
-#definição de cores para o splash screen
+#definição de cores para o letreiro do pipeline no terminal
 CYAN='\033[1;36m'
 NC='\033[0m' #serve para voltar o terminal para a cor normal
 
@@ -28,16 +26,6 @@ echo -e "${CYAN}"
 echo "Executando pipeline snakemake..."
 echo -e "${NC}"
 snakemake --cores all
-
-#remoção dos arquivos temporários, para manter a segurança dos dados
-if [[ "$DATA_CLEANING" == "ON" ]]; then
-  ./clean_data.sh
-elif [[ "$DATA_CLEANING" == "OFF" ]]; then
-  :
-else
-  echo "Valor inválido em DATA_CLEANING: $DATA_CLEANING"
-  exit 1
-fi
 
 
 

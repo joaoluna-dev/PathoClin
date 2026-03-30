@@ -312,16 +312,15 @@ if st.session_state.status_pipeline == 'pendente':
     root = app_path.parent
     vcf_file_path = root / "data" / "raw"
 
-    st.subheader("Inicializador do pipeline")
+    st.subheader("Página inicial do pipeline")
 
     #botão para upload dos arquivos de chamada de variante, para o interior do pipeline
-    files = st.file_uploader(label='Faça o upload dos arquivos VCF (.bcf, .vcf, .vcf.gz) aqui.',
-                             accept_multiple_files=True,
+    file = st.file_uploader(label='Faça o upload dos arquivos VCF (.bcf, .vcf, .vcf.gz) aqui.',
+                             accept_multiple_files=False,
                              type=['bcf', 'vcf', 'vcf.gz'])
-    if files is not None and len(files) > 0:
+    if file is not None:
         #cria os arquivos em que o conteúdo submetido será escrito
-        for file in files:
-            file_path = os.path.join(vcf_file_path, file.name)
+        file_path = os.path.join(vcf_file_path, file.name)
 
         #abre os arquivos criados, e escreve o conteúdo binário nos mesmos, salvando os uploads
         with open(file_path, "wb") as f:
@@ -346,12 +345,6 @@ if st.session_state.status_pipeline == 'pendente':
         st.session_state.status_pipeline = 'pendente'
         st.rerun()
 
-    #habilita ou desativa a limpeza dos arquivos temporários automaticamente após a execução
-    toggle_limpeza = st.toggle(label='Limpar dados temporários após execução', value=False)
-    if toggle_limpeza:
-        st.session_state.limpeza_dos_dados = 'ON'
-    else:
-        st.session_state.limpeza_dos_dados = 'OFF'
     #ao clicar no botão, o pipeline entra em estado de execução, e a página é recarregada para exibir o processo
     if st.button("Executar Análise", type="primary"):
         st.session_state.status_pipeline = 'executando'
@@ -367,7 +360,7 @@ elif st.session_state.status_pipeline == 'executando':
     with st.status("Executando pipeline bioinformático...", expanded=True) as status:
         st.write("Carregando arquivos de entrada...")
         st.write("Iniciando execução do pipeline...")
-        subprocess.run(["./run.sh", f"{st.session_state.limpeza_dos_dados}"], check=True)
+        subprocess.run(["./run.sh"], check=True)
         st.write("Finalizando execução...")
         status.update(label="Processamento concluído!", state="complete", expanded=False)
 
