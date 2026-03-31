@@ -41,7 +41,7 @@ st.set_page_config(
 st.logo("images/logo1.png", size="large")
 
 #título principal
-st.title("Genolaudo")
+st.title("PathoClin")
 st.text("João Gabriel, 2026")
 
 
@@ -314,17 +314,19 @@ if st.session_state.status_pipeline == 'pendente':
 
     st.subheader("Página inicial do pipeline")
 
-    #botão para upload dos arquivos de chamada de variante, para o interior do pipeline
-    file = st.file_uploader(label='Faça o upload dos arquivos VCF (.bcf, .vcf, .vcf.gz) aqui.',
-                             accept_multiple_files=False,
-                             type=['bcf', 'vcf', 'vcf.gz'])
-    if file is not None:
+    #upload dos arquivos de chamada de variante, para o interior do pipeline
+    with st.form("upload_vcf", clear_on_submit=True):
+        uploaded_file = st.file_uploader(label='Faça o upload dos arquivos VCF (.bcf, .vcf, .vcf.gz) aqui.',
+                                 accept_multiple_files=False,
+                                 type=['bcf', 'vcf', 'vcf.gz'])
+        upload_button = st.form_submit_button("Salvar Arquivo no Sistema")
+    if upload_button and uploaded_file is not None:
         #cria os arquivos em que o conteúdo submetido será escrito
-        file_path = os.path.join(vcf_file_path, file.name)
-
-        #abre os arquivos criados, e escreve o conteúdo binário nos mesmos, salvando os uploads
-        with open(file_path, "wb") as f:
-            f.write(file.getbuffer())
+        file_path = os.path.join(vcf_file_path, uploaded_file.name)
+        if not os.path.exists(file_path):
+            #abre os arquivos criados, e escreve o conteúdo binário nos mesmos, salvando os uploads
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
 
     #sistema de verificação dos vcfs submetidos, para evitar arquivos corrompidos ou incompatíveis
     with st.expander(f"Arquivos VCF válidos detectados:", expanded=False):
@@ -333,6 +335,8 @@ if st.session_state.status_pipeline == 'pendente':
                 vcf = VCF(str(vcf_file_path / file))
                 if vcf:
                     st.success(file)
+                    samples_list = str(vcf.samples).strip("[").strip("]")
+                    st.write(f"Amostras detectadas: {samples_list}")
                 vcf.close()
             except Exception as e:
                 st.error(f"{file}: {e}. Verifique o arquivo e tente novamente.")
