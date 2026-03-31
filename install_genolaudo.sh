@@ -4,7 +4,7 @@ echo "Bem vindo ao assistente de instalação do GenoLaudo!"
 echo "São necessários no mínimo 70Gb de espaço livre de armazenamento para continuar"
 
 #verifica se o usuário possui o armazenamento necessário para a execução
-read -p "Deseja prosseguir? (s/n): " selection
+read -rp "Deseja prosseguir? (s/n): " selection
 if [[ $selection == "s" ]]; then
   :
 elif [[ $selection == "n" ]]; then
@@ -15,7 +15,7 @@ echo "É necessário um link de download do ANNOVAR para prosseguir."
 echo "Para mais informações, acesse https://annovar.openbioinformatics.org/en/latest/user-guide/download/"
 
 #obtendo link de download do ANNOVAR
-read -p "Insira o seu link de download do ANNOVAR: " annovar_link
+read -rp "Insira o seu link de download do ANNOVAR: " annovar_link
 
 #baixando o ANNOVAR
 curl "$annovar_link" -o annovar.latest.tar.gz
@@ -83,3 +83,71 @@ mkdir data/temp
 mkdir data/raw
 mkdir data/genome
 mkdir data/output
+
+#baixando arquivos de suporte para o pipeline
+echo "A instalação das ferramentas auxiliares está concluida."
+read -rp "Deseja baixar os genomas de referência (hg19 e hg38)? (s/n): " selection_genome
+if [[ $selection_genome == "s" ]]; then
+  #baixando arquivos de genoma de referência
+  #hg19
+  curl -C - -L -o hg19.fa.gz https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz
+  gunzip hg19.fa.gz
+
+  #hg38
+  curl -C - -L -o hg38.fa.gz https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+  gunzip hg38.fa.gz
+
+  #movendo os arquivos para um diretório de interesse do usuário
+
+  read -rp "Indique o local onde os arquivos devem ser armazenados (ex: /home/user/data/): " genome_place
+
+  mv hg38_abraom* "$genome_place"
+  mv hg38_clinvar* "$genome_place"
+  mv hg38_dbnsfpc* "$genome_place"
+
+  echo "Dados movidos com sucesso."
+
+elif [[ $selection_genome == "n" ]]; then
+  :
+fi
+
+#baixando arquivos de bancos de dados do annovar
+read -rp "Deseja baixar os bancos de dados ANNOVAR (ABraOM, ClinVar e dbNSFP) mais recentes? (s/n): " selection_dbs
+if [[ $selection_dbs == "s" ]]; then
+  #verifica se o perl está instalado no sistema, caso contrário, instala
+  if ! command -v perl &> /dev/null; then
+    sudo apt update
+    sudo apt install perl -y
+  fi
+  #baixando arquivos de banco de dados hg38
+  echo "Baixando bancos de dados para a versão hg38..."
+  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar abraom data/annovar/humandb/dbs/
+  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar clinvar_20250721 data/annovar/humandb/dbs/
+  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar dbnsfp42c data/annovar/humandb/dbs/
+
+  #baixando arquivos de banco de dados hg19
+  echo "Baixando bancos de dados para hg19..."
+  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar abraom data/annovar/humandb/dbs/
+  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar clinvar_20250721 data/annovar/humandb/dbs/
+  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar dbnsfp42c data/annovar/humandb/dbs/
+
+  echo "Bancos de dados baixados com sucesso!"
+
+  #movendo os arquivos baixados para o diretório de interesse
+  read -rp "Indique o local onde os arquivos devem ser armazenados (ex: /home/user/data/): " data_place
+
+  mv hg38_abraom* "$data_place"
+  mv hg38_clinvar* "$data_place"
+  mv hg38_dbnsfpc* "$data_place"
+
+  echo "Dados movidos com sucesso."
+elif [[ $selection_dbs == "n" ]]; then
+  echo "Finalizando instalação..."
+  exit 1
+fi
+
+echo "Finalizando instalação"
+
+
+
+
