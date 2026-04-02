@@ -120,15 +120,15 @@ if [[ $selection_dbs == "s" ]]; then
   fi
   #baixando arquivos de banco de dados hg38
   echo "Baixando bancos de dados para a versão hg38..."
-  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar abraom data/annovar/humandb/dbs/
-  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar clinvar_20250721 data/annovar/humandb/dbs/
-  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar dbnsfp42c data/annovar/humandb/dbs/
+  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar abraom .
+  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar clinvar_20250721 .
+  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar dbnsfp42c .
 
   #baixando arquivos de banco de dados hg19
   echo "Baixando bancos de dados para hg19..."
-  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar abraom data/annovar/humandb/dbs/
-  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar clinvar_20250721 data/annovar/humandb/dbs/
-  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar dbnsfp42c data/annovar/humandb/dbs/
+  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar abraom .
+  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar clinvar_20250721 .
+  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar dbnsfp42c .
 
   echo "Bancos de dados baixados com sucesso!"
 
