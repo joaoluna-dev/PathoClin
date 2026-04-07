@@ -17,7 +17,7 @@ from cyvcf2 import VCF, Writer
 # <https://gatk.broadinstitute.org/hc/en-us/articles/360035531112--How-to-Filter-variants-either-with-VQSR-or-by-hard-filtering>. Acesso em: 16 mar. 2026.
 
 print("==============================================================================")
-print("GenoLaudo - Iniciando filtragem de vcf...")
+print("PathoClin - Iniciando filtragem de vcf...")
 print(
     "Referências para a filtragem: \n"
     "VAN DER AUWERA, G. A. et al. From FastQ Data to High‐Confidence Variant Calls. 2013. \n"
@@ -41,10 +41,10 @@ min_read_pos_rank_sum_snp = snakemake.params.min_read_pos_rank_sum_snp
 min_read_pos_rank_sum_indel = snakemake.params.min_read_pos_rank_sum_indel
 
 # criação do iterável a partir do vcf de entrada, e o escritor que criará o vcf de saída
-print("GenoLaudo - Lendo arquivo de entrada...")
+print("PathoClin - Lendo arquivo de entrada...")
 vcf_file = VCF(input_file)
 
-print("GenoLaudo - Criando arquivo de saida...")
+print("PathoClin - Criando arquivo de saida...")
 writer = Writer(output_file, vcf_file)
 
 # contadores para indicar o usuário a quantidade de variantes filtradas pelo sistema
@@ -52,7 +52,7 @@ total = 0
 passed = 0
 filtered = 0
 
-print("GenoLaudo - Iniciando filtragem das variantes...")
+print("PathoClin - Iniciando filtragem das variantes...")
 for variant in vcf_file:
     total += 1
     # hard filters: se a condição não está presente, a variante é filtrada do resultado final
@@ -179,10 +179,10 @@ for variant in vcf_file:
         passed += 1
 
 print("=========================================================================================================")
-print("GenoLaudo - Filtragem finalizada com sucesso!")
-print(f"GenoLaudo - Total de variantes processadas: {total}")
-print(f"GenoLaudo - Número de variantes que passaram na verificação: {passed} ({(passed / total) * 100:.2f}%)")
-print(f"GenoLaudo - Número de variantes reprovadas na verificação {filtered} ({(filtered / total) * 100:.2f}%)")
+print("PathoClin - Filtragem finalizada com sucesso!")
+print(f"PathoClin - Total de variantes processadas: {total}")
+print(f"PathoClin - Número de variantes que passaram na verificação: {passed} ({(passed / total) * 100:.2f}%)")
+print(f"PathoClin - Número de variantes reprovadas na verificação {filtered} ({(filtered / total) * 100:.2f}%)")
 print("=========================================================================================================")
 
 writer.close()
