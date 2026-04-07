@@ -28,7 +28,7 @@ fi
 mkdir -p "$(dirname "$OUTPUT_BASE")"
 
 echo "=============================================================================="
-echo "GenoLaudo - Iniciando Anotação das variantes filtradas em $INPUT_VCF..."
+echo "PathoClin - Iniciando Anotação das variantes filtradas em $INPUT_VCF..."
 echo "=============================================================================="
 
 # ==============================================================================
@@ -72,7 +72,7 @@ OPERATIONS="$OPERATIONS,f"
 # ==============================================================================
 # 2. NORMALIZAÇÃO E CONVERSÃO PARA AVINPUT
 # ==============================================================================
-echo "GenoLaudo - [1/3] Preparando genoma, normalizando e convertendo para ANNOVAR..."
+echo "PathoClin - [1/3] Preparando genoma, normalizando e convertendo para ANNOVAR..."
 
 REF_GENOME=$(ls "$GENOME_DIR"/*.fa "$GENOME_DIR"/*.fasta 2>/dev/null | head -n 1)
 
@@ -98,7 +98,7 @@ perl "$CONVERT_ANNOVAR" -format vcf4 "$NORM_VCF" > "$AV_INPUT"
 # ==============================================================================
 # 3. ANOTAÇÃO DAS VARIANTES
 # ==============================================================================
-echo "GenoLaudo - [2/3] Executando ANNOVAR..."
+echo "PathoClin - [2/3] Executando ANNOVAR..."
 
 perl "$TABLE_ANNOVAR" "$AV_INPUT" "$DB_DIR" \
     -buildver hg38 \
@@ -118,7 +118,7 @@ fi
 # ==============================================================================
 # 4. CORREÇÃO DE CABEÇALHO E INJEÇÃO DE COLUNAS PARA INTERVAR
 # ==============================================================================
-echo "GenoLaudo - Adaptando multianno.txt para compatibilidade com InterVar..."
+echo "PathoClin - Adaptando multianno.txt para compatibilidade com InterVar..."
 
 # Ajusta nomenclatura do refGene se necessário
 if [ "$REFGENE_NAME" != "refGene" ]; then
@@ -163,7 +163,7 @@ echo "  -> Colunas populacionais injetadas com sucesso (freq=0)."
 # ==============================================================================
 # 5. CLASSIFICAÇÃO DAS VARIANTES USANDO O INTERVAR
 # ==============================================================================
-echo "GenoLaudo - [3/3] Executando InterVar (ACMG)..."
+echo "PathoClin - [3/3] Executando InterVar (ACMG)..."
 
 ln -sf "$ANNOVAR_DIR/annotate_variation.pl" ./annotate_variation.pl
 ln -sf "$ANNOVAR_DIR/convert2annovar.pl" ./convert2annovar.pl
