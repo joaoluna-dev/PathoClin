@@ -209,7 +209,7 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
     print(
         "=============================================================================="
     )
-    print("GenoLaudo - Iniciando Parsing das anotações...")
+    print("PathoClin - Iniciando Parsing das anotações...")
     print(
         "Referências para os campos do parsing: \n "
         "RICHARDS, S. et al. Standards and guidelines for the interpretation of sequence variants: \n "
@@ -578,7 +578,7 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
         json.dump(final_output, f, indent=4, ensure_ascii=False)
 
     print("==============================================================================")
-    print(f"GenoLaudo - CONCLUÍDO! O laudo formatado está em: {output_json_path}")
+    print(f"PathoClin - CONCLUÍDO! O laudo formatado está em: {output_json_path}")
     print("==============================================================================")
 
 
