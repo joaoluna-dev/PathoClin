@@ -209,9 +209,9 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
     print(
         "=============================================================================="
     )
-    print("PathoClin - Iniciando Parsing das anotações...")
+    print("PathoClin - Iniciando Processamento das anotações...")
     print(
-        "Referências para os campos do parsing: \n "
+        "Referências para os campos obtidos: \n "
         "RICHARDS, S. et al. Standards and guidelines for the interpretation of sequence variants: \n "
         "a joint consensus recommendation of the American College of Medical Genetics and Genomics and the \n "
         "Association for Molecular Pathology. Genetics in medicine : official journal of the American College of \n "
@@ -219,40 +219,49 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
     )
     print("==============================================================================")
 
-    # obtenção dinâmica do orpha.txt
+    # Obtenção do orpha.txt para nomear OMIM IDs do clinvar
     script_dir = os.path.dirname(os.path.abspath(__file__))
+
     project_root = os.path.dirname(script_dir)
     real_intervar_dir = os.path.join(project_root, "data", "intervar")
 
     # criação do dicionário com o mapeamento OMIM ID: fenótipo a partir do orpha.txt
-    print("[0/4] Carregando dicionário Orphanet (OMIM to Syndrome)...")
+    print("PathoClin - [0/4] Carregando dicionário Orphanet (OMIM to Syndrome)...")
     orpha_mapping = load_orpha_mapping(real_intervar_dir)
     print(f"      -> {len(orpha_mapping)} IDs médicos mapeados.")
 
     # =========================================================================
-    # 1. LER O VCF: OBTENÇÃO DO HGVS E GENÓTIPO DA VARIANTE PARA CADA AMOSTRA
+    # 1. LEITURA DO VCF: OBTENÇÃO DO HGVS E GENÓTIPO DA VARIANTE PARA CADA AMOSTRA
     # =========================================================================
     # leitura do vcf com o cyvcf2
-    print(f"[1/4] Lendo VCF: {vcf_path}")
+    print(f"PathoClin - [1/4] Lendo VCF: {vcf_path}")
     vcf = VCF(vcf_path)
     sample_names = vcf.samples  # obtenção dos nomes das amostras no vcf.norm
 
-    # cria a base do json com a estrutura {sample: {dados}...}
+    # cria a base do json com a estrutura {sample: {variantes}...}
     samples_dict = {sample: {} for sample in sample_names}
     # set para remover duplicatas de coodernadas genômicas
     all_valid_keys = set()
 
-    # iterando sobre o VCF para obter a notação HGVS das variantes
+    # Iterando sobre o VCF normalizado obtido
+    # O objetivo deste loop é extrair as variantes presentes no VCF e processar a sua coordenada para que ela seja semelhante a do ANNOVAR
+    # Após o processamento, é verificado o genótipo para a variante em cada uma das amostras do VCF
+    # Caso o genótipo não seja missing, ou referência, ela é registrada para a amostra correspondete
+    # Este registro cria o dicionário a ser utilizado posteriormente para criar o JSON com os dados processados das variantes
+
     for variant in vcf:
         chrom = variant.CHROM.replace("chr", "")
         pos = int(variant.POS)
         ref = variant.REF
         alt = variant.ALT[0] if variant.ALT else "."
 
-        # Emulação da matemática do ANNOVAR para geração da chave de junção
+        # Simulação do sistema do ANNOVAR para geração da chave de junção
         annovar_start = pos
         annovar_ref = ref
         annovar_alt = alt
+
+        
+        # Processamento das coordenadas HGVS das variantes para que elas batam com as coordenadas do annovar
 
         # Aplica a quebra apenas para Indels (tamanhos de REF e ALT diferentes)
         if len(annovar_ref) != len(annovar_alt):
@@ -271,23 +280,27 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
                 else:
                     # Substituições em bloco (delins): soma 1 também
                     annovar_start += 1
-
-        # A chave de cruzamento usa estritamente os dados normalizados sem a âncora
+                    
+        # Criação da chave de identificação de cada variante, para que ela possa ser armazenada no arquivo de saída
+        # Este processo garante que as informações de cada variante obtidas nos arquivos vcf, multianno e intervar sejam escritas corretamente na sua variante correspondente
+        # Esta chave é criada durante o parsing das informações de cada arquivo, e buscada no arquivo final json para que a informação seja assimilada à variante correta
+        # A chave usa estritamente os dados normalizados sem a âncora, para satisfazer as necessidades do annovar
         key = f"{chrom}_{annovar_start}_{annovar_ref}_{annovar_alt}"
 
-        # itera sobre as amostras, se o genótipo for missing, a variante não é registrada
+        # itera sobre as amostras, se o genótipo for missing, a variante não é registrada para a amostra correspondente
         for idx, sample_name in enumerate(sample_names):
             gt = variant.genotypes[idx]
             a, b = gt[0], gt[1]  # genótipo diploide obtido
 
-            # pula genótipos missing ou 0/0 (referência)
+            # pula genótipos missing ou 0/0 (referência) encontrados
             if a == -1 or b == -1 or (a == 0 and b == 0):
                 continue
 
-            # define a zigosidade da amostra
+            # define a zigosidade da variante para cada amostra
             zygosity = "Homozygous" if a == b else "Heterozygous"
 
-            # a amostra é inicializada no dicionário, mantendo a coordenada visual do VCF original
+            # Adição das informações obtidas da variante no dicionário responsável por armazenar os dados
+            # Somente será adicionada caso o genótipo para a variante atual do loop não esteja mascarado (pulado anteriormente)
             samples_dict[sample_name][key] = {
                 "Coordenada Genômica": f"chr{chrom}:{pos}:{ref}:{alt}",
                 "Gene": "Unknown",
@@ -302,7 +315,7 @@ def main(vcf_path, annovar_path, intervar_path, output_json_path):
                 "Frequência ABraOM": 0
             }
 
-            # armazena a chave modificada para o cruzamento nos Passos 2 e 3
+            # armazena a chave criada de cada variante no set criado anteriormente, para o cruzamento nos Passos 2 e 3
             all_valid_keys.add(key)
 
     print(f"      -> Total de amostras: {len(sample_names)}")
