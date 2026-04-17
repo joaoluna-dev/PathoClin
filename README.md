@@ -141,7 +141,7 @@ Biomédico, Bioinformata e Desenvolvedor Python. Trabalha com ciência de dados 
 - Apptainer:
 
     ```bash
-    nohup apptainer run --bind /caminho/local/para/o/vcfbruto.vcf:/app/data/input:ro --bind /caminho/local/para/bancos_annovar:/app/data/annovar/humandb/dbs:ro --bind /caminho/local/para/o/genoma_de_referencia.fa:/app/data/genome:ro genolaudo.sif > genolaudo.log 2>&1 &
+    nohup apptainer run --bind /caminho/local/para/diretorio/bancos_annovar:/app/data/annovar/humandb/dbs:ro --bind /caminho/local/para/os/genomas_de_referencia:/app/data/genome:ro genolaudo.sif > genolaudo.log 2>&1 &
     ```
     `nohup ... &`: executa o container em segundo plano, liberando o terminal para uso e salvando os registros de execução no arquivo `genolaudo.log` <br>
     `apptainer run`: inicia a execução do container acionando o script principal da imagem <br>
