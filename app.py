@@ -32,18 +32,58 @@ if 'status_pipeline' not in st.session_state:
 if 'limpeza_dos_dados' not in st.session_state:
     st.session_state.limpeza_dos_dados = 'OFF'
 
+#barra no topo do site
+st.markdown("""
+<style>
+    header[data-testid="stHeader"] {
+        background-color: transparent !important;
+        z-index: 100000 !important;
+    }
+
+    header[data-testid="stHeader"] * {
+        color: white !important;
+    }
+
+    .top-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background-color: #004F9F; 
+        color: white;
+        padding: 12px 20px;
+        z-index: 99999; 
+        display: flex;
+        align-items: center;
+        justify-content: space-between; 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .top-bar .project-name {
+        font-family: "Source Sans Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin: 0;
+    }
+
+    .block-container {
+        padding-top: 70px !important;
+    }
+</style>
+
+<div class="top-bar">
+    <span class="project-name">PathoClin</span>
+</div>
+""", unsafe_allow_html=True)
+
 #header do site
 st.set_page_config(
-	page_title='PathoClin: Bioinformática Clínica',
+	page_title='PathoClin',
 	page_icon='🧬',
 	layout='wide'
 )
-st.logo("images/logo1.png", size="large")
-
-#título principal
-st.title("PathoClin")
-st.text("João Gabriel, 2026")
-
 
 #funções principais
 
@@ -352,6 +392,9 @@ if st.session_state.status_pipeline == 'pendente':
     if st.button("Executar Análise", type="primary"):
         st.session_state.status_pipeline = 'executando'
         st.rerun()
+
+
+    st.text("Criado por: João Gabriel, 2026")
 
 # ==========================================
 # Execução do pipeline
