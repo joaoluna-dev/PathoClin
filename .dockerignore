@@ -8,4 +8,10 @@ __pycache__/
 *.def
 pyproject.toml
 .gitignore
+data/annovar/humandb/dbs/*.log
+data/annovar/humandb/dbs/*.txt
+data/annovar/humandb/dbs/*.idx
+data/annovar/humandb/dbs/*.fa
+data/genome/*.fa
+data/genome/*.fai
 
