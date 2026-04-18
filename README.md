@@ -117,7 +117,7 @@ Biomédico, Bioinformata e Desenvolvedor Python. Trabalha com ciência de dados 
 
 - Apptainer
     ```bash
-    apptainer build ./GenoLaudo.sif ./GenoLaudo.def
+    apptainer build ./PathoClin.sif ./PathoClin.def
     ```
 
 > Este procedimento pode levar um tempo.
