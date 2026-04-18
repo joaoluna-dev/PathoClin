@@ -8,6 +8,7 @@ import datetime
 import time
 import subprocess
 from cyvcf2 import VCF
+import glob
 
 #referências científicas
 #MACARTHUR, D. G. et al. Guidelines for investigating causality of sequence variants in human disease.
@@ -42,6 +43,10 @@ st.markdown("""
 
     header[data-testid="stHeader"] * {
         color: white !important;
+    }
+
+    .stDeployButton, [data-testid="stAppDeployButton"] {
+        display: none !important;
     }
 
     .top-bar {
@@ -393,6 +398,16 @@ if st.session_state.status_pipeline == 'pendente':
         st.session_state.status_pipeline = 'executando'
         st.rerun()
 
+    #obtendo os arquivos .json de análises concluídas
+    json_files_path = root / "data" / "temp"
+    json_files = list(json_files_path.glob("*.txt"))
+
+    #varifica se já existem arquivos de análises anteriores, caso sim, exibe um botão para ver as análises anteriores
+    if json_files:
+        view_previous_analysis = st.button("Visualizar Análises Concluídas", type="primary")
+        if view_previous_analysis:
+            st.session_state.status_pipeline = 'concluido'
+            st.rerun()
 
     st.text("Criado por: João Gabriel, 2026")
 
@@ -418,6 +433,7 @@ elif st.session_state.status_pipeline == 'executando':
 # Formulários para o preenchimento das informações clínicas
 # ==========================================
 elif st.session_state.status_pipeline == 'concluido':
+    st.header("Análises concluídas")
     #caminho absoluto do json com as anotações (estático)
     try:
         app_path = pathlib.Path(__file__).resolve()
@@ -492,7 +508,7 @@ elif st.session_state.status_pipeline == 'concluido':
 
                             st.markdown("---")
 
-                            st.subheader("3. Dados Analíticos e Clínicos")
+                            st.subheader("3. Informações Analíticas e Clínicas")
                             col7, col8 = st.columns(2)
                             with col7:
                                 metodo_analitico = st.text_input("Método analítico*",
@@ -514,7 +530,7 @@ elif st.session_state.status_pipeline == 'concluido':
 
                             st.markdown("---")
 
-                            st.subheader("4. Dados Institucionais e Assinatura (Preenchimento Manual)")
+                            st.subheader("4. Dados Institucionais e Profissionais")
                             col11, col12 = st.columns(2)
                             with col11:
                                 nome_servico = st.text_input("Nome do Serviço / Laboratório*")
@@ -541,11 +557,11 @@ elif st.session_state.status_pipeline == 'concluido':
                                         mime="application/pdf",
                                         icon="📄"
                                     )
-    restart_analysis = st.button(label="Reiniciar análise", type="primary")
+    restart_analysis = st.button(label="Voltar ao início", type="primary")
     if restart_analysis:
         st.session_state.status_pipeline = 'pendente'
         st.rerun()
-    clean_data = st.button(label="Limpar dados temporários e reiniciar", type="primary")
+    clean_data = st.button(label="Limpar análises concluídas e reiniciar", type="primary")
     if clean_data:
         try:
             subprocess.run(["./clean_data.sh", "temp_files"])
