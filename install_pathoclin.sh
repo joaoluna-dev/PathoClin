@@ -86,71 +86,51 @@ mkdir data/output
 
 #baixando arquivos de suporte para o pipeline
 echo "A instalação das ferramentas auxiliares está concluida."
-read -rp "Deseja baixar os genomas de referência (hg19 e hg38)? (s/n): " selection_genome
-if [[ $selection_genome == "s" ]]; then
-  #baixando arquivos de genoma de referência
-  #hg19
-  curl -C - -L -o hg19.fa.gz https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz
-  gunzip hg19.fa.gz
+echo "Iniciando download dos genomas de referência..."
+#baixando arquivos de genoma de referência
+#hg19
+echo "Baixando genoma hg19..."
+curl -C - -L -o hg19.fa.gz https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz
+gunzip hg19.fa.gz
 
-  #hg38
-  curl -C - -L -o hg38.fa.gz https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
-  gunzip hg38.fa.gz
+#hg38
+echo "Baixando genoma hg38..."
+curl -C - -L -o hg38.fa.gz https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+gunzip hg38.fa.gz
 
-  #movendo os arquivos para um diretório de interesse do usuário
+#movendo os arquivos para um diretório de interesse do usuário
 
-  read -rp "Indique o local onde os arquivos devem ser armazenados (ex: /home/user/data/): " genome_place
+echo "Movendo genomas para o diretório /genomes..."
 
-  mv hg38.fa "$genome_place"
-  mv hg19.fa "$genome_place"
+mv hg38.fa data/genome
+mv hg19.fa data/genome
 
-  echo "Dados movidos com sucesso."
-
-elif [[ $selection_genome == "n" ]]; then
-  :
-fi
+echo "Genomas movidos com sucesso."
 
 #baixando arquivos de bancos de dados do annovar
-read -rp "Deseja baixar os bancos de dados ANNOVAR (ABraOM, ClinVar e dbNSFP) mais recentes? (s/n): " selection_dbs
-if [[ $selection_dbs == "s" ]]; then
-  #verifica se o perl está instalado no sistema, caso contrário, instala
-  if ! command -v perl &> /dev/null; then
-    sudo apt update
-    sudo apt install perl -y
-  fi
-  #baixando arquivos de banco de dados hg38
-  echo "Baixando bancos de dados para a versão hg38..."
-  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar abraom .
-  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar clinvar_20250721 .
-  perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar dbnsfp42c .
+echo "Iniciando download dos bancos de dados ANNOVAR (ABraOM, ClinVar e dbNSFP)..."
 
-  #baixando arquivos de banco de dados hg19
-  echo "Baixando bancos de dados para hg19..."
-  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar abraom .
-  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar clinvar_20250721 .
-  perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar dbnsfp42c .
-
-  echo "Bancos de dados baixados com sucesso!"
-
-  #movendo os arquivos baixados para o diretório de interesse
-  read -rp "Indique o local onde os arquivos devem ser armazenados (ex: /home/user/data/): " data_place
-
-  mv hg38_abraom* "$data_place"
-  mv hg38_clinvar* "$data_place"
-  mv hg38_dbnsfpc* "$data_place"
-  mv hg19_abraom* "$data_place"
-  mv hg19_clinvar* "$data_place"
-  mv hg19_dbnsfpc* "$data_place"
-
-  echo "Dados movidos com sucesso."
-  echo "Todos os arquivos baixados devem ser montados em conjunto com o container que executará a aplicação."
-
-elif [[ $selection_dbs == "n" ]]; then
-  echo "Finalizando instalação..."
-  exit 1
+#verifica se o perl está instalado no sistema, caso contrário, instala
+if ! command -v perl &> /dev/null; then
+  sudo apt update
+  sudo apt install perl -y
 fi
 
-echo "Finalizando instalação"
+#baixando arquivos de banco de dados hg38
+echo "Baixando bancos de dados para a versão hg38..."
+perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar abraom data/annovar/humandb/dbs
+perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar clinvar_20250721 data/annovar/humandb/dbs
+perl data/annovar/annotate_variation.pl -buildver hg38 -downdb -webfrom annovar dbnsfp42c data/annovar/humandb/dbs
+
+#baixando arquivos de banco de dados hg19
+echo "Baixando bancos de dados para hg19..."
+perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar abraom data/annovar/humandb/dbs
+perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar clinvar_20250721 data/annovar/humandb/dbs
+perl data/annovar/annotate_variation.pl -buildver hg19 -downdb -webfrom annovar dbnsfp42c data/annovar/humandb/dbs
+
+echo "Bancos de dados baixados e instalados com sucesso!"
+
+echo "Finalizando instalação..."
 
 
 
