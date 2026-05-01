@@ -120,6 +120,9 @@ def filter_data(variants_df, exame, genes):
         filtered_variants_df = variants_df[variants_df["Localização"].str.contains(padrao_regex, na=False, regex=True)]
         return filtered_variants_df
 
+    elif exame == "Genoma Completo":
+        return variants_df
+
     return None
 
 
@@ -489,7 +492,8 @@ elif st.session_state.status_pipeline == 'concluido':
                                 nome_exame = st.selectbox("Nome do exame*",
                                                           options=("Painel Genético",
                                                                    "Exoma",
-                                                                   "Gene"),
+                                                                   "Gene",
+                                                                   "Genoma Completo"),
                                                           index=0)
                             targets = st.text_area(label="Insira os alvos do exame. Caso tenha selecionado 'Gene', "
                                                               "Escreva o nome do Gene(s) de interesse. Caso tenha selecionado "
