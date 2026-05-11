@@ -2,6 +2,7 @@
 
 import sys
 import os
+import re
 import json
 import gc
 import pandas as pd
@@ -169,39 +170,34 @@ def parse_intervar(iv_str):
     """
     extrai a classificação final e a lista de evidências (ex: PVS1, PM2)
     param iv_str: recebe o elemento iterado da coluna de classificação do intervar
-    return: a classificação do intervar (ex: Benign) e a(s) evidência(s) (ex: AB1)
+    return: a classificação do intervar (ex: Benign) e a(s) evidência(s) (ex: PM2, PP3)
     """
-    # verifica se a string é válida ou inválida
     if pd.isna(iv_str) or iv_str == ".":
         return "Not classified", ""
 
-    # ex: InterVar: Benign PVS1=0 PS=[0, 0, 0, 0, 0] PM=[0, 0, 0, 0, 0, 0, 0] PP=[0, 0, 1, 0, 0, 0] BA1=1 BS=[1, 0, 0, 0, 0] BP=[0, 0, 0, 0, 0, 0, 0, 0]
-    # remove o "InterVar", e remove espaços
     clean = str(iv_str).replace("InterVar: ", "").strip()
-    # separa os elementos
-    parts = clean.split()
 
-    classification_words = []
+    match = re.match(r'^([A-Za-z\s]+?)\s+(PVS1|PS[1-4]|PM[1-6]|PP[1-5]|BA1|BS[1-5]|BP[1-8])', clean)
+    if match:
+        classification = match.group(1).strip().capitalize()
+    else:
+        classification = clean.split()[0].capitalize() if clean.split() else "Not classified"
+
     evidence_list = []
 
-    # obtém as evidências da string processada anteriormente
-    hit_evidence = False  # A nossa trava lógica
+    for arr_match in re.finditer(r'(PS|PM|PP|BS|BP)=\[([0-9,\s]+)\]', clean):
+        prefix = arr_match.group(1)
+        values = arr_match.group(2).split(',')
+        for i, v in enumerate(values):
+            if v.strip() == '1':
+                idx = i + 1
+                evidence_list.append(f"{prefix}{idx}")
 
-    for p in parts:
-        if "=" in p:
-            # obtém a evidência, e avalia o seu valor
-            hit_evidence = True
-            # caso exista evidência, adiciona ela a lista de evidências
-            if "=1" in p:
-                evidence_list.append(p.split("=")[0])
-        elif not hit_evidence:
-            # guarda palavras se ainda não tiver chegado na seção de evidências
-            classification_words.append(p)
+    for scalar_match in re.finditer(r'(PVS1|BA1)=(\d+)', clean):
+        if scalar_match.group(2) == '1':
+            evidence_list.append(scalar_match.group(1))
 
-    # reúne as strings de evidência e classificação
-    classification = " ".join(classification_words).capitalize()
     evidence_str = ", ".join(evidence_list)
-
     return classification, evidence_str
 
 

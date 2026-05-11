@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
+set -euo
+set -x
 
 # ==============================================================================
 # CONFIGURAÇÃO DE CAMINHOS DE ARQUIVOS A SEREM LIDOS E CRIADOS
@@ -81,7 +82,7 @@ OPERATIONS="$OPERATIONS,f"
 # ===================================================================================================
 # 2. OBTENÇÃO DO GENOMA DE REFERENCIA, NORMALIZAÇÃO DO VCF FILTRADO E CONVERSÃO PARA FORMATO AVINPUT
 # ===================================================================================================
-echo "PathoClin - [1/3] Preparando genoma, normalizando e convertendo para ANNOVAR..."
+echo "PathoClin - [1/3] Verificando mismatches, preparando genoma, normalizando e convertendo para ANNOVAR..."
 
 # Obtenção dos genomas presentes na pasta genomes
 REF_GENOME=$(ls "$GENOME_DIR"/*.fa "$GENOME_DIR"/*.fasta 2>/dev/null | head -n 1)
@@ -100,19 +101,22 @@ if [ ! -f "${REF_GENOME}.fai" ]; then
     echo "  -> Índice criado com sucesso!"
 fi
 
+#Realizando a normalização
+echo "  -> Iniciando normalização..."
 NORM_VCF="${OUTPUT_BASE}.norm.vcf"
-AV_INPUT="${OUTPUT_BASE}.avinput"
-
-# Normalização
-bcftools norm -m -any -f "$REF_GENOME" "$INPUT_VCF" > "$NORM_VCF"
+bcftools norm -m -any --check-ref w -f "$REF_GENOME" "$INPUT_VCF" > "$NORM_VCF"
+echo "  -> VCF normalizado com sucesso!"
 
 # Criação do AVINPUT a partir do VCF filtrado
+echo "  -> Iniciando conversão para formato AVINPUT..."
+AV_INPUT="${OUTPUT_BASE}.avinput"
 perl "$CONVERT_ANNOVAR" -format vcf4 "$NORM_VCF" > "$AV_INPUT"
+echo "  -> Conversão para formato AVINPUT concluída."
 
 # ==============================================================================
 # 3. ANOTAÇÃO DAS VARIANTES UTILIZANDO O ANNOVAR
 # ==============================================================================
-echo "PathoClin - [2/3] Executando ANNOVAR..."
+echo "PathoClin - [2/3] Executando anotação ANNOVAR..."
 
 perl "$TABLE_ANNOVAR" "$AV_INPUT" "$DB_DIR" \
     -buildver hg38 \
@@ -132,7 +136,7 @@ fi
 # ==============================================================================
 # 4. CORREÇÃO DE CABEÇALHO E INJEÇÃO DE COLUNAS PARA INTERVAR
 # ==============================================================================
-echo "PathoClin - Adaptando multianno.txt para compatibilidade com InterVar..."
+echo "  -> Adaptando multianno.txt para compatibilidade com InterVar..."
 
 # Ajusta nomenclatura do refGene se necessário para evitar erros do intervar
 if [ "$REFGENE_NAME" != "refGene" ]; then
